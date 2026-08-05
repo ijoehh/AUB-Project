@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Tracker Kanban Board</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* CSS Variables & Theme Definitions */
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-tertiary: #1f2937;
+      --bg-card: #1f2937;
+      --bg-card-hover: #374151;
+      
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      
+      --color-primary: #6366f1;
+      --color-primary-hover: #4f46e5;
+      
+      --priority-high: #ef4444;
+      --priority-high-bg: rgba(239, 68, 68, 0.15);
+      --priority-medium: #f59e0b;
+      --priority-medium-bg: rgba(245, 158, 11, 0.15);
+      --priority-low: #10b981;
+      --priority-low-bg: rgba(16, 185, 129, 0.15);
+      
+      --border-color: #374151;
+      --border-focus: #6366f1;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      
+      --transition-fast: 0.15s ease;
+      --transition-normal: 0.25s ease;
+    }
+
+    /* Reset & Base Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-color);
+    }
+
+    /* Header Styles */
+    header {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 2rem;
+      height: 2rem;
+      background: linear-gradient(135deg, var(--color-primary), #a855f7);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      outline: none;
+    }
+
+    .btn-primary {
+      background-color: var(--color-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--bg-tertiary);
+      border-color: var(--text-secondary);
+    }
+
+    /* Kanban Board Layout */
+    .board-container {
+      flex: 1;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .board-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.5rem;
+      flex: 1;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .board {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Kanban Column */
+    .column {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 500px;
+      transition: background-color var(--transition-normal), border-color var(--transition-normal);
+    }
+
+    .column.drag-over {
+      background-color: rgba(99, 102, 241, 0.05);
+      border-color: var(--color-primary);
+    }
+
+    .column-title-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .column-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .column-count {
+      background-color: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+    }
+
+    .column-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 450px;
+      height: 100%;
+    }
+
+    /* Cards */
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      box-shadow: var(--shadow-sm);
+      cursor: grab;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .card:hover {
+      border-color: var(--text-secondary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .card:active {
+      cursor: grabbing;
+    }
+
+    .card.dragging {
+      opacity: 0.4;
+      transform: scale(0.98);
+      border-style: dashed;
+    }
+
+    .card-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .card-desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.25rem;
+      font-size: 0.75rem;
+    }
+
+    .priority-badge {
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      text-transform: capitalize;
+    }
+
+    .priority-High {
+      background-color: var(--priority-high-bg);
+      color: var(--priority-high);
+    }
+
+    .priority-Medium {
+      background-color: var(--priority-medium-bg);
+      color: var(--priority-medium);
+    }
+
+    .priority-Low {
+      background-color: var(--priority-low-bg);
+      color: var(--priority-low);
+    }
+
+    .assignee-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--text-secondary);
+    }
+
+    .assignee-avatar {
+      width: 1.25rem;
+      height: 1.25rem;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* States: Loading (Skeleton) */
+    .skeleton-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .skeleton-line {
+      height: 12px;
+      background-color: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      animation: skeleton-loading 1.5s infinite ease-in-out;
+    }
+
+    .skeleton-line.title {
+      width: 70%;
+      height: 16px;
+    }
+
+    .skeleton-line.body-1 {
+      width: 90%;
+    }
+
+    .skeleton-line.body-2 {
+      width: 50%;
+    }
+
+    @keyframes skeleton-loading {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+
+    /* States: Empty State */
+    .empty-state {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      height: 100%;
+      min-height: 150px;
+    }
+
+    .empty-icon {
+      font-size: 1.5rem;
+    }
+
+    .empty-text {
+      font-size: 0.8125rem;
+    }
+
+    /* States: Error State */
+    .error-container {
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--priority-high);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .error-content {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .error-icon {
+      color: var(--priority-high);
+      font-size: 1.25rem;
+    }
+
+    .error-message {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+    }
+
+    .error-close {
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 500px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transform: translateY(20px);
+      transition: transform var(--transition-normal);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .form-control {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      padding: 0.625rem 0.875rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color var(--transition-fast);
+      width: 100%;
+    }
+
+    .form-control:focus {
+      border-color: var(--border-focus);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    /* Toast notification system */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      z-index: 1000;
+    }
+
+    .toast {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--color-primary);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      min-width: 300px;
+      max-width: 400px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+      animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast.toast-error {
+      border-left-color: var(--priority-high);
+    }
+
+    .toast.toast-success {
+      border-left-color: var(--priority-low);
+    }
+
+    .toast-message {
+      font-size: 0.8125rem;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    @keyframes toast-slide-in {
+      from {
+        transform: translateY(100%) scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">✓</div>
+      <h1 class="brand-title">Task Tracker</h1>
+    </div>
+    <button class="btn btn-primary" id="open-modal-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Add Task
+    </button>
+  </header>
+
+  <div class="board-container">
+    <!-- Top-level Error State Panel -->
+    <div class="error-container" id="global-error-panel">
+      <div class="error-content">
+        <span class="error-icon">⚠</span>
+        <span class="error-message" id="global-error-text">Failed to sync with backend API. Running in offline/disconnected mode.</span>
+      </div>
+      <button class="error-close" id="close-error-btn">&times;</button>
+    </div>
+
+    <div class="board-header">
+      <div>
+        <h2 style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem;">Kanban Board</h2>
+        <div class="board-subtitle">Organize tasks and track progress. Cards are ordered by priority (High &rarr; Low).</div>
+      </div>
+    </div>
+
+    <!-- The Kanban Board Grid -->
+    <div class="board">
+      
+      <!-- Column: To Do -->
+      <div class="column" data-status="todo" id="col-todo">
+        <div class="column-title-wrapper">
+          <div class="column-title">
+            <span style="color: var(--text-muted);">●</span> To Do
+          </div>
+          <span class="column-count" id="count-todo">0</span>
+        </div>
+        <div class="column-list" id="list-todo"></div>
+      </div>
+
+      <!-- Column: In Progress -->
+      <div class="column" data-status="doing" id="col-doing">
+        <div class="column-title-wrapper">
+          <div class="column-title">
+            <span style="color: var(--priority-medium);">●</span> In Progress
+          </div>
+          <span class="column-count" id="count-doing">0</span>
+        </div>
+        <div class="column-list" id="list-doing"></div>
+      </div>
+
+      <!-- Column: Done -->
+      <div class="column" data-status="done" id="col-done">
+        <div class="column-title-wrapper">
+          <div class="column-title">
+            <span style="color: var(--priority-low);">●</span> Done
+          </div>
+          <span class="column-count" id="count-done">0</span>
+        </div>
+        <div class="column-list" id="list-done"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Create Task Dialog Modal -->
+  <div class="modal-overlay" id="task-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Task</h3>
+        <button class="modal-close" id="close-modal-btn">&times;</button>
+      </div>
+      <form id="create-task-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="task-title">Title *</label>
+            <input type="text" id="task-title" class="form-control" placeholder="Task title..." required maxlength="200">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="task-description">Description</label>
+            <textarea id="task-description" class="form-control" placeholder="Describe the work to be done..." maxlength="2000"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="task-priority">Priority</label>
+              <select id="task-priority" class="form-control">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="task-assignee">Assignee</label>
+              <input type="text" id="task-assignee" class="form-control" placeholder="User name...">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-modal-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Container for Toasts -->
+  <div class="toast-container" id="toast-holder"></div>
+
+  <script>
+    // Configuration & State
+    const API_BASE = window.location.origin.includes('localhost:8000') || window.location.origin.includes('127.0.0.1:8000')
+      ? ''
+      : 'http://127.0.0.1:8000';
+
+    const state = {
+      tasks: [],
+      loading: false,
+      error: null
+    };
+
+    // Priority mappings for sorting
+    const priorityWeights = {
+      'High': 1,
+      'Medium': 2,
+      'Low': 3
+    };
+
+    // Dom Nodes
+    const lists = {
+      todo: document.getElementById('list-todo'),
+      doing: document.getElementById('list-doing'),
+      done: document.getElementById('list-done')
+    };
+
+    const counts = {
+      todo: document.getElementById('count-todo'),
+      doing: document.getElementById('count-doing'),
+      done: document.getElementById('count-done')
+    };
+
+    const modalOverlay = document.getElementById('task-modal-overlay');
+    const openModalBtn = document.getElementById('open-modal-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelModalBtn = document.getElementById('cancel-modal-btn');
+    const createTaskForm = document.getElementById('create-task-form');
+    const globalErrorPanel = document.getElementById('global-error-panel');
+    const globalErrorText = document.getElementById('global-error-text');
+    const closeErrorBtn = document.getElementById('close-error-btn');
+    const toastHolder = document.getElementById('toast-holder');
+
+    // Load tasks on startup
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+    });
+
+    function initApp() {
+      // Event Listeners for UI
+      openModalBtn.addEventListener('click', showModal);
+      closeModalBtn.addEventListener('click', hideModal);
+      cancelModalBtn.addEventListener('click', hideModal);
+      closeErrorBtn.addEventListener('click', hideGlobalError);
+      
+      createTaskForm.addEventListener('submit', handleFormSubmit);
+
+      // Initialize columns Drag and Drop
+      setupDragAndDrop();
+
+      // Fetch Tasks
+      fetchTasks();
+    }
+
+    // Modal Control
+    function showModal() {
+      createTaskForm.reset();
+      modalOverlay.classList.add('active');
+      document.getElementById('task-title').focus();
+    }
+
+    function hideModal() {
+      modalOverlay.classList.remove('active');
+    }
+
+    // Toast Messages
+    function triggerToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `
+        <div class="toast-message">${escapeHtml(message)}</div>
+        <button class="toast-close">&times;</button>
+      `;
+
+      toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.remove();
+      });
+
+      toastHolder.appendChild(toast);
+
+      // Auto dismiss after 4 seconds
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, 4000);
+    }
+
+    // Error Panel
+    function showGlobalError(message) {
+      globalErrorText.textContent = message;
+      globalErrorPanel.style.display = 'flex';
+    }
+
+    function hideGlobalError() {
+      globalErrorPanel.style.display = 'none';
+    }
+
+    // Safe HTML Escaping
+    function escapeHtml(unsafe) {
+      if (!unsafe) return '';
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // API Calls
+    async function fetchTasks() {
+      state.loading = true;
+      renderLoadingSkeletons();
+      hideGlobalError();
+
+      try {
+        const response = await fetch(`${API_BASE}/api/tasks`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+        }
+        state.tasks = await response.json();
+        state.error = null;
+      } catch (err) {
+        state.error = err.message;
+        showGlobalError(`API connection error: ${err.message}. Retrying may help.`);
+        triggerToast("Failed to fetch tasks from server", "error");
+      } finally {
+        state.loading = false;
+        renderBoard();
+      }
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      const title = document.getElementById('task-title').value.trim();
+      const description = document.getElementById('task-description').value.trim();
+      const priority = document.getElementById('task-priority').value;
+      const assigneeInput = document.getElementById('task-assignee').value.trim();
+      const assignee = assigneeInput === "" ? null : assigneeInput;
+
+      if (!title) {
+        triggerToast("Title is required", "error");
+        return;
+      }
+
+      const payload = {
+        title,
+        description,
+        priority,
+        assignee,
+        status: 'todo'
+      };
+
+      try {
+        // Creating task is POST /tasks
+        const response = await fetch(`${API_BASE}/tasks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const detail = await response.json();
+          throw new Error(detail.detail || `Server returned ${response.status}`);
+        }
+
+        const newTask = await response.json();
+        state.tasks.push(newTask);
+        
+        triggerToast("Task created successfully!");
+        hideModal();
+        renderBoard();
+      } catch (err) {
+        triggerToast(`Creation failed: ${err.message}`, "error");
+      }
+    }
+
+    // Patch status of task (handles transition validations on backend)
+    async function patchTaskStatus(taskId, newStatus, originalColumn) {
+      try {
+        // Endpoint: PATCH /tasks/{id}
+        const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          // Extract specific validation message or standard HTTP status reason
+          let errorDetail = "Invalid state transition";
+          if (errData && errData.detail) {
+            errorDetail = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
+          }
+          throw new Error(errorDetail);
+        }
+
+        const updatedTask = await response.json();
+        
+        // Update local state
+        const taskIdx = state.tasks.findIndex(t => String(t.id) === String(taskId));
+        if (taskIdx !== -1) {
+          state.tasks[taskIdx] = updatedTask;
+        }
+
+        triggerToast(`Task moved to ${formatStatusName(newStatus)}`);
+        renderBoard();
+      } catch (err) {
+        triggerToast(`${err.message}`, "error");
+        // Revert card view
+        renderBoard();
+      }
+    }
+
+    function formatStatusName(status) {
+      if (status === 'todo') return 'To Do';
+      if (status === 'doing') return 'In Progress';
+      if (status === 'done') return 'Done';
+      return status;
+    }
+
+    // Render Skeletons during Loading
+    function renderLoadingSkeletons() {
+      Object.keys(lists).forEach(colName => {
+        lists[colName].innerHTML = `
+          <div class="skeleton-card">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line body-1"></div>
+            <div class="skeleton-line body-2"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line body-1"></div>
+            <div class="skeleton-line body-2"></div>
+          </div>
+        `;
+      });
+    }
+
+    // Primary Render Loop
+    function renderBoard() {
+      // 1. Group tasks by status
+      const grouped = {
+        todo: [],
+        doing: [],
+        done: []
+      };
+
+      state.tasks.forEach(task => {
+        if (grouped[task.status]) {
+          grouped[task.status].push(task);
+        } else {
+          // If status is capitalized or mismatched, push to fallback
+          grouped.todo.push(task);
+        }
+      });
+
+      // 2. Sort groups by priority (High -> Medium -> Low)
+      Object.keys(grouped).forEach(status => {
+        grouped[status].sort((a, b) => {
+          const weightA = priorityWeights[a.priority] || 99;
+          const weightB = priorityWeights[b.priority] || 99;
+          if (weightA !== weightB) {
+            return weightA - weightB; // Sort ascending by weight (1, 2, 3)
+          }
+          // Secondary sort: newly created tasks first
+          return new Date(b.created_at) - new Date(a.created_at);
+        });
+      });
+
+      // 3. Clear and Render
+      Object.keys(lists).forEach(status => {
+        const colList = lists[status];
+        const countBadge = counts[status];
+        const tasksInCol = grouped[status];
+
+        colList.innerHTML = '';
+        countBadge.textContent = tasksInCol.length;
+
+        if (tasksInCol.length === 0) {
+          colList.innerHTML = `
+            <div class="empty-state">
+              <span class="empty-icon">📁</span>
+              <div class="empty-text">No tasks here yet</div>
+            </div>
+          `;
+          return;
+        }
+
+        tasksInCol.forEach(task => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.setAttribute('draggable', 'true');
+          card.setAttribute('data-task-id', task.id);
+          card.setAttribute('data-current-status', task.status);
+
+          // Get initials for Assignee
+          let assigneeHtml = '';
+          if (task.assignee) {
+            const initials = task.assignee
+              .split(' ')
+              .map(word => word[0])
+              .join('')
+              .toUpperCase()
+              .substring(0, 2);
+
+            assigneeHtml = `
+              <div class="assignee-badge" title="Assigned to ${escapeHtml(task.assignee)}">
+                <div class="assignee-avatar">${escapeHtml(initials)}</div>
+                <span>${escapeHtml(task.assignee)}</span>
+              </div>
+            `;
+          } else {
+            assigneeHtml = `
+              <div class="assignee-badge" style="opacity: 0.4;">
+                <span>Unassigned</span>
+              </div>
+            `;
+          }
+
+          card.innerHTML = `
+            <div class="card-title">${escapeHtml(task.title)}</div>
+            ${task.description ? `<div class="card-desc">${escapeHtml(task.description)}</div>` : ''}
+            <div class="card-meta">
+              <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+              ${assigneeHtml}
+            </div>
+          `;
+
+          // Add card-specific drag listeners
+          card.addEventListener('dragstart', handleDragStart);
+          card.addEventListener('dragend', handleDragEnd);
+
+          colList.appendChild(card);
+        });
+      });
+    }
+
+    // Drag & Drop Functionality
+    let draggedCard = null;
+
+    function setupDragAndDrop() {
+      Object.keys(lists).forEach(status => {
+        const columnNode = document.getElementById(`col-${status}`);
+        
+        columnNode.addEventListener('dragover', handleDragOver);
+        columnNode.addEventListener('dragenter', handleDragEnter);
+        columnNode.addEventListener('dragleave', handleDragLeave);
+        columnNode.addEventListener('drop', handleDrop);
+      });
+    }
+
+    function handleDragStart(e) {
+      draggedCard = this;
+      this.classList.add('dragging');
+      // Set drag image / data payload
+      e.dataTransfer.setData('text/plain', this.getAttribute('data-task-id'));
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragEnd(e) {
+      if (draggedCard) {
+        draggedCard.classList.remove('dragging');
+        draggedCard = null;
+      }
+      // Remove any leftover dragover styles
+      document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleDragEnter(e) {
+      e.preventDefault();
+      this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+
+      if (!draggedCard) return;
+
+      const taskId = draggedCard.getAttribute('data-task-id');
+      const oldStatus = draggedCard.getAttribute('data-current-status');
+      const newStatus = this.getAttribute('data-status');
+
+      if (oldStatus === newStatus) return;
+
+      // Optimistically move card in the DOM to avoid UI flicker
+      // Note: Re-rendering happens instantly upon success or revert upon failure
+      patchTaskStatus(taskId, newStatus, oldStatus);
+    }
+  </script>
+</body>
+</html>
