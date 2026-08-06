@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from .models import TaskStatus, TaskPriority
@@ -11,6 +12,7 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.todo
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
+    due_date: Optional[str] = None
 
     @field_validator("title")
     @classmethod
@@ -22,6 +24,17 @@ class TaskCreate(BaseModel):
             raise ValueError("Title must be 200 characters or fewer")
         return v2
 
+    @field_validator("due_date")
+    @classmethod
+    def _validate_due_date(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return v
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError("due_date must be in YYYY-MM-DD format")
+        return v
+
 
 class TaskUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -31,6 +44,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     assignee: Optional[str] = None
+    due_date: Optional[str] = None
 
     @field_validator("title")
     @classmethod
@@ -43,3 +57,14 @@ class TaskUpdate(BaseModel):
         if len(v2) > 200:
             raise ValueError("Title must be 200 characters or fewer")
         return v2
+
+    @field_validator("due_date")
+    @classmethod
+    def _validate_due_date(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return v
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError("due_date must be in YYYY-MM-DD format")
+        return v

@@ -70,6 +70,7 @@ def add_task(payload: TaskCreate) -> dict[str, Any]:
             "status": payload.status.value if hasattr(payload.status, "value") else payload.status,
             "priority": payload.priority.value if hasattr(payload.priority, "value") else payload.priority,
             "assignee": payload.assignee,
+            "due_date": payload.due_date,
             "created_at": now,
             "updated_at": now,
         }

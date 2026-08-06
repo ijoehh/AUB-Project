@@ -28,6 +28,7 @@ class Task(BaseModel):
     status: TaskStatus = TaskStatus.todo
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
+    due_date: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
