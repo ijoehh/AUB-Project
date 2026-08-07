@@ -652,6 +652,24 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-top: 0.25rem;
+    }
+
+    .tag-chip {
+      background-color: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
   </style>
 </head>
 
@@ -688,7 +706,10 @@
         <div class="board-subtitle">Organize tasks and track progress. Cards are ordered by priority (High &rarr; Low).
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <select id="filter-tag" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); padding: 0.375rem 1.75rem 0.375rem 0.75rem; font-family: inherit; font-size: 0.875rem; outline: none; cursor: pointer;">
+          <option value="">All Tags</option>
+        </select>
         <label for="filter-overdue"
           style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; color: var(--text-secondary); user-select: none;">
           <input type="checkbox" id="filter-overdue"
@@ -777,6 +798,11 @@
             <label class="form-label" for="input-due-date">Due Date</label>
             <input type="date" id="input-due-date" class="form-control">
           </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-tags">Tags</label>
+            <input type="text" id="input-tags" class="form-control" placeholder="e.g. frontend, bug">
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancel-modal-btn">Cancel</button>
@@ -852,6 +878,13 @@
         });
       }
 
+      const filterTag = document.getElementById('filter-tag');
+      if (filterTag) {
+        filterTag.addEventListener('change', () => {
+          renderBoard();
+        });
+      }
+
       // Initialize columns Drag and Drop
       setupDragAndDrop();
 
@@ -875,6 +908,9 @@
       const dueDateInput = document.getElementById('input-due-date');
       if (dueDateInput) dueDateInput.value = '';
 
+      const tagsInput = document.getElementById('input-tags');
+      if (tagsInput) tagsInput.value = '';
+
       modalOverlay.classList.add('active');
       document.getElementById('task-title').focus();
     }
@@ -890,6 +926,11 @@
       const dueDateInput = document.getElementById('input-due-date');
       if (dueDateInput) {
         dueDateInput.value = task.due_date || '';
+      }
+
+      const tagsInput = document.getElementById('input-tags');
+      if (tagsInput) {
+        tagsInput.value = (task.tags || []).join(', ');
       }
 
       const modalTitle = modalOverlay.querySelector('.modal-title');
@@ -985,6 +1026,9 @@
       const dueDateInput = document.getElementById('input-due-date');
       const due_date = dueDateInput && dueDateInput.value ? dueDateInput.value : null;
 
+      const tagsInput = document.getElementById('input-tags');
+      const tags = tagsInput ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t !== '') : [];
+
       if (!title) {
         triggerToast("Title is required", "error");
         return;
@@ -995,7 +1039,8 @@
         description,
         priority,
         assignee,
-        due_date
+        due_date,
+        tags
       };
 
       try {
@@ -1124,8 +1169,49 @@
       return dueDate < today;
     }
 
+    function updateTagFilterDropdown() {
+      const filterTag = document.getElementById('filter-tag');
+      if (!filterTag) return;
+
+      const previousValue = filterTag.value;
+
+      // Extract all unique tags
+      const allTags = new Set();
+      state.tasks.forEach(task => {
+        if (task.tags && Array.isArray(task.tags)) {
+          task.tags.forEach(tag => {
+            if (tag.trim()) {
+              allTags.add(tag.trim());
+            }
+          });
+        }
+      });
+
+      const sortedTags = Array.from(allTags).sort();
+
+      // Clear existing options, keep the first "All Tags" option
+      filterTag.innerHTML = '<option value="">All Tags</option>';
+
+      sortedTags.forEach(tag => {
+        const option = document.createElement('option');
+        option.value = tag;
+        option.textContent = tag;
+        filterTag.appendChild(option);
+      });
+
+      // Restore value if it still exists
+      if (allTags.has(previousValue)) {
+        filterTag.value = previousValue;
+      } else {
+        filterTag.value = '';
+      }
+    }
+
     // Primary Render Loop
     function renderBoard() {
+      // Update filter options dynamic dropdown first to reflect the latest tasks list
+      updateTagFilterDropdown();
+
       // 1. Group tasks by status
       const grouped = {
         todo: [],
@@ -1134,9 +1220,15 @@
       };
 
       const showOverdueOnly = filterOverdueCheckbox && filterOverdueCheckbox.checked;
+      const filterTag = document.getElementById('filter-tag');
+      const selectedTag = filterTag ? filterTag.value : '';
 
       state.tasks.forEach(task => {
         if (showOverdueOnly && !isOverdue(task)) {
+          return;
+        }
+
+        if (selectedTag && (!task.tags || !task.tags.includes(selectedTag))) {
           return;
         }
 
@@ -1225,9 +1317,19 @@
             `;
           }
 
+          let tagsHtml = '';
+          if (task.tags && task.tags.length > 0) {
+            tagsHtml = `
+              <div class="card-tags">
+                ${task.tags.map(tag => `<span class="tag-chip">${escapeHtml(tag)}</span>`).join('')}
+              </div>
+            `;
+          }
+
           card.innerHTML = `
             <div class="card-title">${escapeHtml(task.title)}</div>
             ${task.description ? `<div class="card-desc">${escapeHtml(task.description)}</div>` : ''}
+            ${tagsHtml}
             ${dueDateHtml}
             <div class="card-meta">
               <span class="priority-badge priority-${task.priority}">${task.priority}</span>

@@ -39,6 +39,9 @@ def _write_raw(data: dict[str, Any]) -> None:
 def get_all_tasks(status: Optional[str] = None, priority: Optional[str] = None) -> list[dict[str, Any]]:
     with _lock:
         tasks = _read_raw()["tasks"]
+    for t in tasks:
+        if "tags" not in t:
+            t["tags"] = []
     if status is not None:
         tasks = [t for t in tasks if t.get("status") == status]
     if priority is not None:
@@ -54,6 +57,8 @@ def get_task_by_id(task_id: str | int) -> Optional[dict[str, Any]]:
     with _lock:
         for task in _read_raw()["tasks"]:
             if task["id"] == int_id:
+                if "tags" not in task:
+                    task["tags"] = []
                 return task
     return None
 
@@ -71,6 +76,7 @@ def add_task(payload: TaskCreate) -> dict[str, Any]:
             "priority": payload.priority.value if hasattr(payload.priority, "value") else payload.priority,
             "assignee": payload.assignee,
             "due_date": payload.due_date,
+            "tags": payload.tags if payload.tags is not None else [],
             "created_at": now,
             "updated_at": now,
         }
@@ -94,6 +100,10 @@ def update_task(task_id: str | int, payload: TaskUpdate) -> Optional[dict[str, A
         data = _read_raw()
         for task in data["tasks"]:
             if task["id"] == int_id:
+                if "tags" not in task:
+                    task["tags"] = []
+                if "tags" in changes and changes["tags"] is None:
+                    changes["tags"] = []
                 for k, v in list(changes.items()):
                     if hasattr(v, "value"):
                         changes[k] = v.value

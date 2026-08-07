@@ -247,3 +247,47 @@ def test_clear_due_date(client, created_task):
     assert response.json()["due_date"] is None
 
 
+def test_create_task_with_valid_tags(client):
+    payload = {
+        "title": "task with valid tags",
+        "tags": ["Frontend", "Bug"]
+    }
+    response = client.post("/tasks", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["tags"] == ["Frontend", "Bug"]
+
+
+def test_create_task_tag_over_length_limit(client):
+    payload = {
+        "title": "task with long tag",
+        "tags": ["a" * 21]
+    }
+    response = client.post("/tasks", json=payload)
+    assert response.status_code == 422
+
+
+def test_create_task_tag_count_limit(client):
+    payload = {
+        "title": "task with too many tags",
+        "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6"]
+    }
+    response = client.post("/tasks", json=payload)
+    assert response.status_code == 422
+
+
+def test_update_task_preserves_tags(client):
+    # Create task with tags
+    payload = {
+        "title": "original task",
+        "tags": ["Frontend", "Bug"]
+    }
+    create_resp = client.post("/tasks", json=payload)
+    assert create_resp.status_code == 201
+    task_id = create_resp.json()["id"]
+
+    # Partially update another field
+    update_payload = {"title": "updated task title"}
+    response = client.patch(f"/tasks/{task_id}", json=update_payload)
+    assert response.status_code == 200
+    assert response.json()["tags"] == ["Frontend", "Bug"]

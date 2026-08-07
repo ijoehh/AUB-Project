@@ -29,6 +29,7 @@ class Task(BaseModel):
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
     due_date: Optional[str] = None
+    tags: list[str] = []
     created_at: datetime
     updated_at: datetime
 
