@@ -9,20 +9,32 @@ with Python's standard library.
 - **Backend:** FastAPI + Pydantic, storing state in `backend/data/tasks.json`
   via `json` + `pathlib` only (no SQLite, no TinyDB, no SQLModel).
 
-## Run it
+## Run and Test Instructions
 
+### 1. Running the Backend
+Navigate to the `backend/` directory, install requirements, and run the server:
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
+The interactive API documentation will be available at **http://127.0.0.1:8000/docs**.
 
-Then open the interactive API docs at **http://127.0.0.1:8000/docs** or access the API directly.
+### 2. Opening the Frontend
+You can open `frontend/index.html` directly in any web browser. 
 
-That's it — one dependency install, one command, run every time you want to
-start the server. `backend/data/tasks.json` is created automatically on
-first run if it doesn't exist yet, and you can open it in any text editor to
-see exactly what the app has stored.
+Alternatively, you can run a local server from the project root:
+```bash
+python -m http.server 5500
+```
+Then open **http://127.0.0.1:5500/frontend/** in your browser.
+
+### 3. Running the Test Suite
+To run the automated tests, navigate to the `backend/` directory and execute:
+```bash
+python -m pytest
+```
+All 33 tests should pass.
 
 ## API
 

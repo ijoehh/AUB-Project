@@ -1,0 +1,17 @@
+Mid-Course Project Submission
+
+Repository URL: https://github.com/ijoehh/prototype-3---removed-front
+Branch Name: mid-course-project
+
+Features Implemented:
+1. Due Dates + Overdue Filter
+2. Tags / Labels
+
+Documentation Files (inside docs/midcourse/):
+- docs/midcourse/user-stories.md
+- docs/midcourse/mini-adr.md
+- docs/midcourse/prompt-log.md
+- docs/midcourse/verification.md (contains baseline and break test results)
+- docs/midcourse/reflection.md
+
+Instructions to run the project and tests can be found in the README.md file in the root of the repository.

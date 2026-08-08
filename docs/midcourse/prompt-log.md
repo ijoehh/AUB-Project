@@ -40,8 +40,10 @@ This document records the prompts used to direct the AI agents, including the we
   Output format:
   Output the complete updated content of the three modified files in separate code blocks.
   ```
-* **AI Output:** *(Pending implementation)*
-* **Decision/Actions:** *(Pending implementation)*
+* **AI Output:** The AI generated the exact code changes for `models.py`, `schemas.py`, and `storage.py` introducing `due_date` as an optional string with the `strptime` YYYY-MM-DD validator.
+* **Decision/Actions:** Accepted all generated code as it followed the strict Pydantic v2 syntax. Saved the changes.
+
+---
 
 ### Prompt 1.2: Backend Unit Tests for Due Dates
 * **Weak version:** Write tests for the due date.
@@ -75,8 +77,10 @@ This document records the prompts used to direct the AI agents, including the we
   Output format:
   Output only the test functions to be appended to `tests/test_tasks.py`.
   ```
-* **AI Output:** *(Pending implementation)*
-* **Decision/Actions:** *(Pending implementation)*
+* **AI Output:** The AI drafted exactly 4 tests matching the signatures and assertions specified.
+* **Decision/Actions:** Appended them to `test_tasks.py`. Executed `python -m pytest` and all tests passed.
+
+---
 
 ### Prompt 1.3: Frontend Integration & Overdue Filtering
 * **Weak version:** Make due date work in html.
@@ -110,8 +114,8 @@ This document records the prompts used to direct the AI agents, including the we
   Output format:
   Output the complete modified `frontend/index.html` file or the exact JavaScript functions and HTML blocks to replace.
   ```
-* **AI Output:** *(Pending implementation)*
-* **Decision/Actions:** *(Pending implementation)*
+* **AI Output:** The AI generated the HTML structure, CSS styling, and JS logic for due date input, overdue badge rendering, and the checkbox filtering.
+* **Decision/Actions:** Integrated the HTML/JS changes. Manually verified that tasks show overdue status correctly and filter on demand.
 
 ---
 
@@ -152,8 +156,10 @@ This document records the prompts used to direct the AI agents, including the we
   Output format:
   Output the complete updated content of the three modified files in separate code blocks.
   ```
-* **AI Output:** *(Pending implementation)*
-* **Decision/Actions:** *(Pending implementation)*
+* **AI Output:** The AI generated the schema changes, including the set check for tag limits and character length bounds.
+* **Decision/Actions:** Saved updates. Handled legacy tasks without a tags key by dynamically injecting `tags=[]` in `storage.py`.
+
+---
 
 ### Prompt 2.2: Backend Unit Tests for Tags
 * **Weak version:** Add test tags.
@@ -186,8 +192,10 @@ This document records the prompts used to direct the AI agents, including the we
   Output format:
   Output only the test functions to be appended to `tests/test_tasks.py`.
   ```
-* **AI Output:** *(Pending implementation)*
-* **Decision/Actions:** *(Pending implementation)*
+* **AI Output:** AI generated the exact 4 tags verification tests.
+* **Decision/Actions:** Appended tests to `test_tasks.py`. Verified that all tests pass.
+
+---
 
 ### Prompt 2.3: Frontend Integration & Tag Filtering
 * **Weak version:** Connect tag input in html.
@@ -221,5 +229,5 @@ This document records the prompts used to direct the AI agents, including the we
   Output format:
   Output the complete modified `frontend/index.html` file or the exact JavaScript functions and HTML blocks to replace.
   ```
-* **AI Output:** *(Pending implementation)*
-* **Decision/Actions:** *(Pending implementation)*
+* **AI Output:** AI generated the select filter, card tags container styling, modal input fields, and tag collection aggregation script.
+* **Decision/Actions:** Applied changes to `index.html`. Verified dynamic dropdown options populate and filter tasks successfully.
