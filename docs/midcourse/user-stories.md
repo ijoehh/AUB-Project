@@ -37,12 +37,13 @@ This document lists the user stories, acceptance criteria, and AI assumptions co
 * **So that** I can focus exclusively on delayed items.
 * **Acceptance Criteria:**
   - A checkbox/toggle is available above the board to "Show Overdue Only".
-  - Checking this box hides all tasks that are not overdue.
+  - Checking this box hides all tasks that are not overdue on the client side.
+  - Backend `GET /api/tasks?overdue=true` (and `GET /tasks?overdue=true`) returns only tasks with due dates in the past whose status is not `done`.
   - Column empty states are maintained cleanly.
 
 ### AI Assumption Corrected
-* **AI Assumption:** The AI assumed the overdue flag should be computed by the backend and returned as a boolean property `is_overdue` on the task model.
-* **Correction:** Since the server might run in UTC but the user is viewing the board in their local timezone, calculating "overdue" dynamically in the frontend client logic (comparing task due date at local midnight to local current date) prevents timezone mismatches.
+* **AI Assumption:** The AI assumed overdue filtering only needed to exist on the client side.
+* **Correction:** We implemented both client-side instant filtering for the interactive Kanban UI and backend `?overdue=true` query filtering with automated pytest tests.
 
 ---
 
@@ -74,7 +75,8 @@ This document lists the user stories, acceptance criteria, and AI assumptions co
   - A tag selection dropdown or filter input is placed above the board.
   - Selecting a tag shows only tasks matching that tag across all columns.
   - Selecting "All Tags" clears the filter.
+  - Backend `GET /api/tasks?tag=<name>` (and `GET /tasks?tag=<name>`) returns only tasks containing that tag, returning an empty list `[]` if no tasks match.
 
 ### AI Assumption Corrected
-* **AI Assumption:** The AI assumed tags could be arbitrary strings without length restrictions or validation.
-* **Correction:** We enforced validation on the backend (using Pydantic validators) to reject tags exceeding 20 characters or tasks exceeding 5 tags, preventing UI overflow issues.
+* **AI Assumption:** The AI assumed tags could be arbitrary strings without validation or backend query support.
+* **Correction:** We enforced validation on the backend (using Pydantic validators) to reject tags exceeding 20 characters or tasks exceeding 5 tags, and implemented query parameter filtering in `storage.py` and `routes.py` with pytest test coverage.

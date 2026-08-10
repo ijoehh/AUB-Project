@@ -6,33 +6,38 @@ This document outlines the design choices and trade-offs for the features implem
 
 The Task Tracker is designed to be lightweight, with **no database, no ORM, and no Docker**—relying purely on standard file storage (`tasks.json`). The mid-course requirements call for adding two features: **Due Dates** and **Tags/Labels**.
 
-## Decision 1: Storing and Validating Due Dates
+---
 
-* **Decision:** Store the due date as an ISO-8601 date string (`YYYY-MM-DD`) in the JSON database. Use Pydantic's `date` or custom validator in the schema.
-* **Backend Validation:** We validate that any non-null due date conforms to `YYYY-MM-DD` and is parsed as a valid calendar date.
-* **Overdue Computation:** Instead of storing `is_overdue` in the JSON file (which would require a background job to update daily), overdue status is calculated dynamically:
-  - **Frontend:** Compare the task `due_date` against the local client date at midnight.
-  - **Backend:** Allow filtering GET `/tasks` by overdue status if requested.
+## Decision 1: Storing, Validating, and Filtering Due Dates
+
+* **Storage Format:** Store the due date as an ISO-8601 date string (`YYYY-MM-DD`) in `tasks.json`.
+* **Backend Validation:** Validated via Pydantic validator (`datetime.strptime(v, "%Y-%m-%d")`). Rejects invalid dates or invalid formats with `HTTP 422`.
+* **Overdue Filtering (Backend + Frontend):**
+  - **Backend Filtering:** `GET /api/tasks?overdue=true` (and `GET /tasks?overdue=true`) filters and returns only tasks with a due date prior to today's UTC date where status is not `done`. Tested with automated pytest tests.
+  - **Frontend Filtering:** The UI includes a "Show Overdue Only" toggle that computes overdue status relative to client local time and immediately filters the Kanban board without requiring a page reload.
 * **Alternatives Rejected:**
-  - *Storing Full Datetime/Timezones:* Storing time-of-day introduces timezone conversion complexity. Storing just `YYYY-MM-DD` represents a clean "end of day" deadline, which is simpler and robust.
+  - *Database-stored `is_overdue` flag:* Storing a static `is_overdue` boolean in the JSON file was rejected because it would quickly become stale and would require periodic cron jobs or worker processes to stay accurate.
 
 ---
 
-## Decision 2: Storing and Validating Tags
+## Decision 2: Storing, Validating, and Filtering Tags
 
-* **Decision:** Store tags as a list of strings (`["Bug", "Frontend"]`) on the `Task` model.
-* **Backend Validation:** Use a Pydantic validator to:
-  - Strip whitespace from each tag.
-  - Discard empty values.
-  - Enforce a maximum of 5 tags.
-  - Enforce a maximum length of 20 characters per tag.
+* **Storage Format:** Store tags as a native list of strings (`["Bug", "Frontend"]`) on each task record in `tasks.json`.
+* **Backend Validation:** Validated via Pydantic validator in `schemas.py`:
+  - Strips whitespace from each tag.
+  - Discards empty strings.
+  - Enforces a maximum of 5 unique tags per task.
+  - Enforces a maximum length of 20 characters per tag.
+* **Tag Filtering (Backend + Frontend):**
+  - **Backend Filtering:** `GET /api/tasks?tag=<name>` returns only tasks containing the specified tag. Tested with automated pytest tests.
+  - **Frontend Filtering:** The UI dynamically extracts all unique tags from loaded tasks, populates a filter dropdown, and filters the board on change.
 * **Alternatives Rejected:**
-  - *Normalized Comma-Separated String:* Storing tags as a comma-separated string (`"Bug,Frontend"`) in the JSON file. While this is simple, using a JSON list of strings matches native Python types and JSON structures better, avoiding repetitive splitting/joining operations.
+  - *Comma-separated string in JSON:* Storing tags as a plain string (e.g. `"Bug,Frontend"`) was rejected because a JSON array directly matches Python's `list[str]` and prevents repetitive string parsing inside storage functions.
 
 ---
 
 ## Alternative AI Suggestions Rejected
 
-1. **Vite + React Refactor:** The AI initially suggested refactoring the frontend into React/Vite. We rejected this because a simple, single-file HTML/CSS/JS frontend matches the existing Modules 1-3 scope and avoids introducing build-system complexity.
-2. **Third-Party Calendar Library:** The AI suggested importing a calendar/date picker library. We rejected this in favor of native HTML `<input type="date">` which is fully responsive and supported in all modern browsers.
-3. **Transition to SQLite:** The AI suggested transitioning storage to SQLite. We rejected this to maintain the architectural decision record (ADR) of "no database" established in Module 3.
+1. **Vite + React Refactor:** The AI initially suggested refactoring the frontend into React/Vite. We rejected this to keep the single-file HTML/CSS/JS frontend matching Modules 1-3.
+2. **Third-Party Date Picker Library:** We rejected external calendar libraries in favor of standard HTML `<input type="date">`.
+3. **Transition to SQLite:** We rejected transitioning to SQLite to maintain the ADR of "no database" established in Module 3.

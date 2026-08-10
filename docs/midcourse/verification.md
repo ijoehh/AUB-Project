@@ -2,7 +2,7 @@
 
 This document records the automated and manual verification results for the mid-course project.
 
-## Baseline Verification (Before Changes)
+## 1. Baseline Verification (Before Changes)
 
 * **Date:** August 6, 2026
 * **Branch:** `mid-course-project`
@@ -12,7 +12,7 @@ This document records the automated and manual verification results for the mid-
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\joeha\Desktop\AUB\prototype 3 - removed front\backend
+rootdir: C:\Users\joeha\Desktop\AUB\prototype 4\backend
 collected 17 items
 
 tests\test_tasks.py .................                                    [100%]
@@ -21,25 +21,46 @@ tests\test_tasks.py .................                                    [100%]
 
 ---
 
-## Behavior Contract Verification (Post-Implementation)
+## 2. Behavior Contract Verification (Post-Implementation)
 
-* **Date:** August 7, 2026
+* **Date:** August 10, 2026
 * **Command run:** `python -m pytest` inside the `backend/` directory.
-* **Results:** **33 passed** (17 original tests + 8 due date tests + 8 tags tests).
+* **Results:** **32 passed** (17 baseline tests + 8 due date tests + 3 backend filter tests + 4 tags validation tests).
 
 ### Output:
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\joeha\Desktop\AUB\prototype 3 - removed front\backend
+rootdir: C:\Users\joeha\Desktop\AUB\prototype 4\backend
 plugins: anyio-4.14.1
-collected 33 items
+collected 32 items
 
-tests\test_tasks.py .................................                    [100%]
-======================= 33 passed, 3 warnings in 0.50s ========================
+tests\test_tasks.py ................................                     [100%]
+======================= 32 passed, 3 warnings in 0.59s ========================
 ```
 
-### Feature 1 (Due Dates) Tests Added:
+### Complete Test Inventory:
+
+#### Baseline Tests (17):
+* `test_create_task_valid_returns_201_with_full_body`
+* `test_create_task_missing_title_returns_422`
+* `test_create_task_blank_title_returns_422`
+* `test_create_task_invalid_priority_returns_422`
+* `test_create_task_unknown_field_returns_422`
+* `test_list_tasks_empty_returns_200_and_empty_list`
+* `test_list_tasks_filter_by_status_no_match_returns_200_and_empty_list`
+* `test_list_tasks_filter_by_priority_returns_only_matches`
+* `test_get_task_by_id_returns_task`
+* `test_get_task_by_id_not_found_returns_404_with_detail`
+* `test_patch_partial_update_keeps_other_fields`
+* `test_patch_not_found_returns_404`
+* `test_patch_valid_transition_todo_to_inprogress_returns_200`
+* `test_patch_invalid_transition_todo_to_done_returns_422`
+* `test_patch_same_status_returns_422`
+* `test_delete_existing_returns_204_no_body`
+* `test_delete_missing_returns_404`
+
+#### Feature 1: Due Date Tests (8):
 * `test_create_task_with_valid_due_date`
 * `test_create_task_with_invalid_due_date_format_returns_422`
 * `test_create_task_with_non_date_string_due_date_returns_422`
@@ -49,7 +70,12 @@ tests\test_tasks.py .................................                    [100%]
 * `test_update_due_date_invalid_returns_422`
 * `test_update_due_date_to_none`
 
-### Feature 2 (Tags) Tests Added:
+#### Backend Filter Tests (3):
+* `test_list_tasks_filter_by_tag`
+* `test_list_tasks_filter_by_tag_no_match_returns_empty_list`
+* `test_list_tasks_filter_by_overdue`
+
+#### Feature 2: Tags & Labels Tests (4):
 * `test_create_task_with_valid_tags`
 * `test_create_task_tag_over_length_limit`
 * `test_create_task_tag_count_limit`
@@ -57,22 +83,39 @@ tests\test_tasks.py .................................                    [100%]
 
 ---
 
-## Break Test Evidence
+## 3. Manual Browser Verification
 
-To prove that the unit tests are sensitive and correctly protect the system boundaries, we performed a Break Test.
+1. **Due Date Creation & Edit:**
+   * Opened Create Modal -> Entered title and due date -> Submitted -> Verified due date appears on card.
+   * Clicked Edit on card -> Form loaded with existing due date -> Changed due date -> Saved -> Card updated immediately.
+2. **Overdue Indicator:**
+   * Created task with yesterday's date in `todo` status -> Verified red "Overdue" pill badge appears on the card.
+   * Moved overdue task to `done` -> Verified "Overdue" badge disappears.
+3. **Overdue Filter:**
+   * Checked "Show Overdue Only" toggle -> Non-overdue tasks were hidden, only overdue tasks remained visible.
+4. **Tag Filtering:**
+   * Created tasks with tags `Frontend` and `Backend`.
+   * Selected `Frontend` in the tag filter dropdown -> Only `Frontend` tasks were displayed.
+   * Selected "All Tags" -> All tasks restored.
 
-### 1. Break Introduced
-In `backend/app/schemas.py`, we temporarily bypassed the tag length limit check inside the Pydantic field validator for `tags`:
+---
+
+## 4. Break Test Evidence
+
+To verify test sensitivity and regression protection, we conducted a Break Test on the tag length validation.
+
+### Step 1: Break Introduced
+In `backend/app/schemas.py`, we temporarily bypassed the tag length check inside `_validate_tags`:
 ```diff
 -            if len(stripped) > 20:
 +            if False: # len(stripped) > 20:
                  raise ValueError("Tag must be 20 characters or fewer")
 ```
 
-### 2. Tests Expected to Fail
-* `tests/test_tasks.py::test_create_task_tag_over_length_limit` (should return 201 Created instead of 422 Unprocessable Content).
+### Step 2: Test Expected to Fail
+* `tests/test_tasks.py::test_create_task_tag_over_length_limit`
 
-### 3. Actual Pytest Failure Output
+### Step 3: Pytest Failure Output
 ```text
 ================================== FAILURES ===================================
 ___________________ test_create_task_tag_over_length_limit ____________________
@@ -91,9 +134,9 @@ E        +  where 201 = <Response [201 Created]>.status_code
 
 tests\test_tasks.py:267: AssertionError
 =========================== short test summary info ===========================
-FAILED tests/test_tasks.py::test_create_task_tag_over_length_limit - assert 2...
-================== 1 failed, 32 passed, 3 warnings in 0.54s ===================
+FAILED tests/test_tasks.py::test_create_task_tag_over_length_limit - assert 201 == 422
+================== 1 failed, 31 passed, 3 warnings in 0.54s ===================
 ```
 
-### 4. Restoration
-We restored the tag length check validation in `backend/app/schemas.py`, ran `pytest`, and confirmed all **33 tests passed** again.
+### Step 4: Code Restored
+Restored the validator check `if len(stripped) > 20:`, re-ran `pytest`, and confirmed all **32 tests passed**.

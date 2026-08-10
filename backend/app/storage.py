@@ -36,7 +36,12 @@ def _write_raw(data: dict[str, Any]) -> None:
     tmp.replace(DATA_FILE)
 
 
-def get_all_tasks(status: Optional[str] = None, priority: Optional[str] = None) -> list[dict[str, Any]]:
+def get_all_tasks(
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    tag: Optional[str] = None,
+    overdue: Optional[bool] = None,
+) -> list[dict[str, Any]]:
     with _lock:
         tasks = _read_raw()["tasks"]
     for t in tasks:
@@ -46,6 +51,20 @@ def get_all_tasks(status: Optional[str] = None, priority: Optional[str] = None) 
         tasks = [t for t in tasks if t.get("status") == status]
     if priority is not None:
         tasks = [t for t in tasks if t.get("priority") == priority]
+    if tag is not None:
+        tasks = [t for t in tasks if tag in t.get("tags", [])]
+    if overdue is not None:
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if overdue:
+            tasks = [
+                t for t in tasks
+                if t.get("due_date") and t.get("due_date") < today_str and t.get("status") != "done"
+            ]
+        else:
+            tasks = [
+                t for t in tasks
+                if not (t.get("due_date") and t.get("due_date") < today_str and t.get("status") != "done")
+            ]
     return tasks
 
 

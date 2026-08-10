@@ -4,8 +4,14 @@ from .models import TaskCreate,TaskUpdate,TaskResponse
 router=APIRouter(prefix="/api/tasks",tags=["tasks"])
 from typing import Optional
 
-@router.get("",response_model=list[TaskResponse])
-def gt(status: Optional[str] = None, priority: Optional[str] = None): return get_all_tasks(status=status, priority=priority)
+@router.get("", response_model=list[TaskResponse])
+def gt(
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    tag: Optional[str] = None,
+    overdue: Optional[bool] = None,
+):
+    return get_all_tasks(status=status, priority=priority, tag=tag, overdue=overdue)
 @router.post("",response_model=TaskResponse,status_code=201)
 def ct(p:TaskCreate): return add_task(p)
 @router.get("/{task_id}",response_model=TaskResponse)

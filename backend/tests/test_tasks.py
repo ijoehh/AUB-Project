@@ -141,7 +141,7 @@ def test_delete_missing_returns_404(client):
     assert response.status_code == 404
 
 
-# Optional Due Date Tests
+# Due Date Tests
 def test_create_task_with_valid_due_date(client):
     payload = {
         "title": "task with due date",
@@ -201,52 +201,55 @@ def test_update_due_date_invalid_returns_422(client, created_task):
 
 def test_update_due_date_to_none(client, created_task):
     task_id = created_task["id"]
-    # First set it to a valid date
     client.patch(f"/tasks/{task_id}", json={"due_date": "2027-01-15"})
-    # Now set it to None
     response = client.patch(f"/tasks/{task_id}", json={"due_date": None})
     assert response.status_code == 200
     assert response.json()["due_date"] is None
 
 
-def test_create_task_valid_due_date(client):
-    payload = {
-        "title": "Valid Due Date Task",
-        "due_date": "2026-08-31"
-    }
-    response = client.post("/tasks", json=payload)
-    assert response.status_code == 201
-    assert response.json()["due_date"] == "2026-08-31"
-
-
-def test_create_task_invalid_due_date_format(client):
-    payload = {
-        "title": "Invalid Due Date Task",
-        "due_date": "not-a-date"
-    }
-    response = client.post("/tasks", json=payload)
-    assert response.status_code == 422
-
-
-def test_update_due_date(client, created_task):
-    task_id = created_task["id"]
-    payload = {"due_date": "2026-09-15"}
-    response = client.patch(f"/tasks/{task_id}", json=payload)
+# Filter Tests (Tags and Overdue)
+def test_list_tasks_filter_by_tag(client):
+    client.post("/tasks", json={"title": "UI Task", "tags": ["Frontend", "Design"]})
+    client.post("/tasks", json={"title": "DB Task", "tags": ["Backend"]})
+    
+    response = client.get("/api/tasks", params={"tag": "Frontend"})
     assert response.status_code == 200
-    assert response.json()["due_date"] == "2026-09-15"
+    tasks = response.json()
+    assert len(tasks) == 1
+    assert tasks[0]["title"] == "UI Task"
+    assert "Frontend" in tasks[0]["tags"]
 
-
-def test_clear_due_date(client, created_task):
-    task_id = created_task["id"]
-    # First set to a valid date
-    client.patch(f"/tasks/{task_id}", json={"due_date": "2026-08-31"})
-    # Clear the date
-    payload = {"due_date": None}
-    response = client.patch(f"/tasks/{task_id}", json=payload)
+def test_list_tasks_filter_by_tag_no_match_returns_empty_list(client):
+    client.post("/tasks", json={"title": "UI Task", "tags": ["Frontend"]})
+    response = client.get("/api/tasks", params={"tag": "NonExistentTag"})
     assert response.status_code == 200
-    assert response.json()["due_date"] is None
+    assert response.json() == []
+
+def test_list_tasks_filter_by_overdue(client):
+    # Past due and not done -> Overdue
+    client.post("/tasks", json={"title": "Late task", "due_date": "2020-01-01", "status": "todo"})
+    # Future due -> Not overdue
+    client.post("/tasks", json={"title": "Future task", "due_date": "2099-01-01", "status": "todo"})
+    # Past due but done -> Not overdue
+    t3 = client.post("/tasks", json={"title": "Done task", "due_date": "2020-01-01", "status": "todo"}).json()
+    client.patch(f"/tasks/{t3['id']}", json={"status": "doing"})
+    client.patch(f"/tasks/{t3['id']}", json={"status": "done"})
+
+    # Filter overdue=True
+    response = client.get("/api/tasks", params={"overdue": True})
+    assert response.status_code == 200
+    tasks = response.json()
+    assert len(tasks) == 1
+    assert tasks[0]["title"] == "Late task"
+
+    # Filter overdue=False
+    response_not_overdue = client.get("/api/tasks", params={"overdue": False})
+    assert response_not_overdue.status_code == 200
+    not_overdue_tasks = response_not_overdue.json()
+    assert len(not_overdue_tasks) == 2
 
 
+# Tag Validation & CRUD Tests
 def test_create_task_with_valid_tags(client):
     payload = {
         "title": "task with valid tags",
@@ -257,7 +260,6 @@ def test_create_task_with_valid_tags(client):
     data = response.json()
     assert data["tags"] == ["Frontend", "Bug"]
 
-
 def test_create_task_tag_over_length_limit(client):
     payload = {
         "title": "task with long tag",
@@ -265,7 +267,6 @@ def test_create_task_tag_over_length_limit(client):
     }
     response = client.post("/tasks", json=payload)
     assert response.status_code == 422
-
 
 def test_create_task_tag_count_limit(client):
     payload = {
@@ -275,9 +276,7 @@ def test_create_task_tag_count_limit(client):
     response = client.post("/tasks", json=payload)
     assert response.status_code == 422
 
-
 def test_update_task_preserves_tags(client):
-    # Create task with tags
     payload = {
         "title": "original task",
         "tags": ["Frontend", "Bug"]
@@ -286,7 +285,6 @@ def test_update_task_preserves_tags(client):
     assert create_resp.status_code == 201
     task_id = create_resp.json()["id"]
 
-    # Partially update another field
     update_payload = {"title": "updated task title"}
     response = client.patch(f"/tasks/{task_id}", json=update_payload)
     assert response.status_code == 200
