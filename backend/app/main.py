@@ -29,6 +29,10 @@ app.add_middleware(
 
 app.include_router(router)
 
+@app.get("/health", tags=["health"])
+def health_check():
+    return {"status": "ok"}
+
 @app.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED, tags=["tasks"])
 def create_task(payload: TaskCreate) -> TaskResponse:
     return storage.add_task(payload)

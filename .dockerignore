@@ -1,0 +1,41 @@
+# Environments and secrets
+.env
+.env.*
+
+# Version control and editor
+.git
+.github
+.gitignore
+.claude/
+CLAUDE.md
+.vscode/
+.idea/
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Documentation
+docs/
+
+# Build artifacts
+node_modules/
+build/
+dist/
+*.egg-info/
+
+# Operating system files
+.DS_Store
+Thumbs.db
