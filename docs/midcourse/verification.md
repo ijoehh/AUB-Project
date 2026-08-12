@@ -140,3 +140,51 @@ FAILED tests/test_tasks.py::test_create_task_tag_over_length_limit - assert 201 
 
 ### Step 4: Code Restored
 Restored the validator check `if len(stripped) > 20:`, re-ran `pytest`, and confirmed all **32 tests passed**.
+
+---
+
+## 5. Break Test Evidence — Due Date Format Validation
+
+To verify test sensitivity and regression protection on the due date feature, we conducted a second Break Test on the due date format validator.
+
+### Step 1: Break Introduced
+In `backend/app/schemas.py`, we temporarily bypassed the due date format check inside `_validate_due_date` in `TaskCreate`:
+```diff
+-            datetime.strptime(v, "%Y-%m-%d")
++            if False:  # datetime.strptime(v, "%Y-%m-%d")
++                pass
+```
+
+### Step 2: Tests Expected to Fail
+* `tests/test_tasks.py::test_create_task_with_invalid_due_date_format_returns_422`
+* `tests/test_tasks.py::test_create_task_with_non_date_string_due_date_returns_422`
+* `tests/test_tasks.py::test_update_due_date_invalid_returns_422`
+
+### Step 3: Pytest Failure Output
+```text
+================================== FAILURES ===================================
+_________ test_create_task_with_invalid_due_date_format_returns_422 __________
+
+client = <starlette.testclient.TestClient object at 0x000001E3A72C1A90>
+
+    def test_create_task_with_invalid_due_date_format_returns_422(client):
+        payload = {
+            "title": "task with bad due date",
+            "due_date": "31-12-2026"
+        }
+        response = client.post("/tasks", json=payload)
+>       assert response.status_code == 422
+E       assert 201 == 422
+E        +  where 201 = <Response [201 Created]>.status_code
+
+tests\test_tasks.py:161: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_tasks.py::test_create_task_with_invalid_due_date_format_returns_422 - assert 201 == 422
+FAILED tests/test_tasks.py::test_create_task_with_non_date_string_due_date_returns_422 - assert 201 == 422
+FAILED tests/test_tasks.py::test_update_due_date_invalid_returns_422 - assert 201 == 422
+================== 3 failed, 29 passed, 3 warnings in 0.61s ==================
+```
+
+### Step 4: Code Restored
+Restored the validator check `datetime.strptime(v, "%Y-%m-%d")`, re-ran `pytest`, and confirmed all **32 tests passed**.
+
