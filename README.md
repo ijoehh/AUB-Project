@@ -1,5 +1,51 @@
 # Task Tracker
 
+## Final Project
+
+Branch reviewed: `final-project`
+
+### What this submission demonstrates
+- Existing Task Tracker app still runs inside the intended course scope.
+- CI runs the pytest suite on push and/or pull request.
+- Docker image builds and runs with `/health` returning 200.
+- AI review, security, and ownership evidence is in `docs/`.
+
+### How to run locally
+Navigate to `backend/`, install requirements, and run the server:
+```bash
+cd backend
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+Open interactive Swagger docs at **http://127.0.0.1:8000/docs** or open `frontend/index.html` in your browser.
+
+### How to run tests
+Navigate to `backend/` and run pytest:
+```bash
+cd backend
+python -m pytest -v
+```
+
+### How to run with Docker
+Build and run the container from the repository root:
+```bash
+docker build -t task-tracker:dev .
+docker run -d -p 8000:8000 --name tt-dev task-tracker:dev
+curl http://127.0.0.1:8000/health
+```
+
+### Evidence files
+- [`docs/release-evidence.md`](docs/release-evidence.md)
+- [`docs/final-ai-review.md`](docs/final-ai-review.md)
+- [`docs/ai-playbook.md`](docs/ai-playbook.md)
+
+### AI assistance summary
+- **AI helped draft or review:** CI workflow, Dockerfile, docstrings, security reviews, and test scaffolding.
+- **I verified the work by:** Running automated tests (`pytest -v`), manual browser checks, testing Docker container runtime and `/health` endpoint, and performing Break Tests on business rules.
+- **One AI suggestion I rejected or corrected:** Rejected AI recommendation to replace standard library JSON storage with SQLite and an ORM, preserving the course's lightweight architecture.
+
+---
+
 A minimal task tracker built to a specific architecture decision: **no database,
 no ORM, no Docker** — just FastAPI, Pydantic, and a `tasks.json` file managed
 with Python's standard library.
